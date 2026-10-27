@@ -1,0 +1,1143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CSS Math Functions</title>
+<style>
+:root{
+  --ink:#172033;--muted:#5d687c;--line:#e3e8f1;--soft:#f6f8fc;--card:#fff;
+  --accent:#4f46e5;--accent2:#0f9f8f;--code:#0f172a;--g:#4f46e5;
+  --mono:ui-monospace,"Cascadia Code",SFMono-Regular,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:#dfe4ee;color:var(--ink);font:16px/1.5 "Segoe UI",Inter,system-ui,-apple-system,sans-serif;overflow:hidden}
+code{font-family:var(--mono)}
+button{font:inherit}
+
+/* group colours */
+.g-core{--g:#4f46e5}.g-round{--g:#0f9f8f}.g-sign{--g:#d97706}.g-trig{--g:#db2777}.g-pow{--g:#0284c7}
+
+/* ---------- deck frame ---------- */
+.progress{position:fixed;top:0;left:0;height:4px;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s;z-index:5}
+.viewport{position:fixed;inset:0 0 60px 0}
+.canvas{position:absolute;left:50%;top:50%;width:1280px;height:720px;transform:translate(-50%,-50%) scale(var(--s,1));background:#fff;border-radius:20px;box-shadow:0 24px 60px #1720332e;overflow:hidden}
+.track{display:flex;height:100%;transition:transform .6s cubic-bezier(.22,.8,.24,1)}
+.slide{flex:0 0 100%;min-width:0;height:100%;padding:30px 56px 28px;display:flex;flex-direction:column;gap:16px;overflow:hidden;position:relative}
+.slide-no{position:absolute;right:24px;bottom:8px;font:600 11px var(--mono);color:#a3adbf;letter-spacing:.08em}
+
+.nav{position:fixed;left:0;right:0;bottom:0;height:60px;display:flex;align-items:center;justify-content:center;gap:18px;padding:0 16px}
+.nav .nb{border:1px solid #c9d1df;background:#fff;color:var(--ink);border-radius:10px;padding:7px 16px;font-weight:600;cursor:pointer}
+.nav .nb:hover{border-color:var(--accent);color:var(--accent)}
+.dots{display:flex;gap:6px;align-items:center}
+.dots button{width:9px;height:9px;border-radius:5px;border:0;padding:0;background:#b8c2d4;cursor:pointer;transition:width .25s,background .25s}
+.dots button.on{width:24px;background:var(--accent)}
+.counter{font:600 13px var(--mono);color:#475569;min-width:170px;text-align:center}
+
+/* ---------- slide parts ---------- */
+.head{display:flex;justify-content:space-between;align-items:flex-start;gap:28px}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--g)}
+h2{font-size:38px;line-height:1.1;letter-spacing:-.03em;margin:6px 0}
+h2 code{color:var(--g);font-weight:800}
+.head>div:first-child{flex:1;min-width:0}
+.lead{margin:0;color:var(--muted);font-size:17px;max-width:900px}
+.lead code,.how code,.note code,.tbl code,.rule code{background:#eef1f7;padding:1px 6px;border-radius:5px;font-size:.9em;color:#3730a3}
+.syntax{flex:none;text-align:right}
+.syntax .label{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.syntax .box{background:var(--soft);border:1px solid var(--line);border-left:4px solid var(--g);border-radius:10px;padding:9px 14px;font:700 16px var(--mono);color:var(--ink);white-space:nowrap}
+.support{display:inline-block;margin-top:8px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:999px;background:#e7f8f3;color:#08705f}
+.support.no{background:#fff1dc;color:#94580a}
+
+.stage{background:var(--soft);border:1px solid var(--line);border-radius:16px;padding:12px 18px 14px;display:flex;flex-direction:column;gap:8px}
+.stage-top{display:flex;align-items:center;gap:22px;flex-wrap:wrap;min-height:32px}
+.tag{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#fff;background:var(--g);padding:4px 10px;border-radius:6px}
+.ctrl{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted);font-weight:600}
+.ctrl input[type=range]{width:220px;accent-color:var(--g);cursor:pointer}
+.ctrl output{font:700 15px var(--mono);color:var(--g);min-width:72px}
+.hint{font-size:13px;color:#8a94a8}
+.btn{border:1px solid #c9d1df;background:#fff;border-radius:8px;padding:4px 12px;font-size:13px;font-weight:700;cursor:pointer;color:var(--ink)}
+.btn:hover{border-color:var(--g);color:var(--g)}
+.preview{height:200px;display:flex;align-items:center;justify-content:center;position:relative}
+
+.bottom{display:grid;grid-template-columns:1.35fr 1fr;gap:16px;flex:1;min-height:0}
+.codecard{background:var(--code);border-radius:14px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.codebar{display:flex;align-items:center;gap:6px;padding:8px 12px;background:#1e293b;color:#94a3b8;font-size:12px}
+.codebar i{width:10px;height:10px;border-radius:50%;background:#ff5f57}.codebar i+i{background:#febc2e}.codebar i+i+i{background:#28c840}
+.codebar span{margin-left:8px;font-weight:600;font-family:var(--mono)}
+.copy{margin-left:auto;background:#334155;color:#e2e8f0;border:0;border-radius:6px;padding:3px 10px;font-size:12px;cursor:pointer}
+.copy:hover{background:#475569}
+pre.code{margin:0;padding:12px 18px;color:#e2e8f0;font:14px/1.6 var(--mono);overflow:auto;flex:1;tab-size:2}
+.t-c{color:#7c8aa5;font-style:italic}.t-f{color:#7dd3fc}.t-n{color:#fca5a5}.t-p{color:#c4b5fd}.t-s{color:#fcd34d}
+.how{border:1px solid var(--line);border-radius:14px;padding:12px 18px;overflow:auto;display:flex;flex-direction:column}
+.how h4{margin:0 0 4px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.steps{margin:0;padding:0;list-style:none;counter-reset:s}
+.steps li{counter-increment:s;position:relative;padding-left:30px;margin:6px 0;font-size:14.5px;line-height:1.45}
+.steps li::before{content:counter(s);position:absolute;left:0;top:1px;width:20px;height:20px;border-radius:50%;background:var(--g);color:#fff;font-size:11px;font-weight:800;display:grid;place-items:center}
+.use{margin:auto 0 0;font-size:13.5px;color:var(--muted);border-top:1px dashed var(--line);padding-top:8px}
+.use b{color:var(--ink)}
+.demo-link{display:inline-block;margin-top:4px;font-weight:700;color:var(--g);text-decoration:none}
+.demo-link:hover{text-decoration:underline}
+
+/* ---------- demo pieces ---------- */
+.frame{position:relative;height:110px;max-width:100%;display:flex;align-items:center;container-type:inline-size;outline:2px dashed #9aa6bd;border-radius:6px;background:repeating-linear-gradient(135deg,#eef1f7 0 8px,#fbfcfe 8px 16px)}
+.frame::before{content:attr(data-w);position:absolute;top:-22px;left:0;font:600 12px var(--mono);color:var(--muted)}
+.frame .read{position:absolute;right:8px;bottom:5px;font:700 12px var(--mono);color:var(--muted)}
+.demo-box{height:60px;margin-inline:auto;border-radius:10px;background:linear-gradient(90deg,var(--g),#7c3aed);color:#fff;display:flex;align-items:center;justify-content:center;font:700 14px var(--mono);white-space:nowrap;overflow:hidden;box-shadow:0 6px 16px #4f46e533}
+.clamp-title{margin:0 auto;font-weight:800;letter-spacing:-.03em;white-space:nowrap;line-height:1.1;color:var(--ink)}
+
+.round-demo{display:grid;gap:8px}
+.rrow{display:grid;grid-template-columns:80px 500px 64px;align-items:center;gap:12px}
+.rlab{font:700 13px var(--mono);color:var(--muted);text-align:right}
+.rtrack{height:28px;background:#fff repeating-linear-gradient(90deg,#cfd7e6 0 1px,transparent 1px 50px);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.rbar{height:100%;background:var(--g)}
+.round-raw{background:#94a3b8}
+.rrow b,.lrow b{font:700 13px var(--mono)}
+
+.tall .preview{height:240px}
+.calc-wrap{display:grid;gap:14px;justify-items:center}
+.ctable{border-collapse:separate;border-spacing:0;font-size:13px;background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.ctable th{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 10px;background:#f1f4f9;font-weight:800;vertical-align:top}
+.ctable th small{display:block;text-transform:none;letter-spacing:0;font-weight:600;font-size:11px;color:#8a94a8}
+.ctable td{padding:6px 10px;border-top:1px solid var(--line);font-family:var(--mono);white-space:nowrap}
+.ctable td.res{font-weight:800;color:var(--g)}
+.ctable td.fn{font-weight:800}
+.log-wrap{display:grid;gap:12px;justify-items:center}
+.log-wrap .log-demo{gap:5px}
+.log-wrap .ltrack{height:18px}
+
+.mod-full{background:repeating-linear-gradient(90deg,#94a3b8 0 98px,transparent 98px 100px)}
+.ntrack{position:relative;width:420px;background:#fff linear-gradient(90deg,transparent 49.5px,#cfd7e6 49.5px 50.5px,transparent 50.5px) center/100px 100%}
+.ntrack::before{content:'';position:absolute;left:calc(50% - 1px);top:0;bottom:0;width:2px;background:#64748b;z-index:1}
+.nbar{position:absolute;top:0;bottom:0;left:calc(50% + min(var(--v), 0px));width:max(var(--v), -1 * var(--v));background:var(--g)}
+.n-value{background:#94a3b8}
+
+.xdemo{display:grid;gap:22px;justify-items:center}
+.xtrack{position:relative;width:540px;height:56px;border-radius:28px;background:#fff;border:1px solid var(--line)}
+.xtrack::before{content:'';position:absolute;left:calc(50% - 1px);top:6px;bottom:6px;width:2px;background:#cbd5e1}
+.xtrack::after{content:'0';position:absolute;left:50%;top:-20px;transform:translateX(-50%);font:600 12px var(--mono);color:var(--muted)}
+.xdot{position:absolute;left:calc(50% - 16px);top:calc(50% - 16px);width:32px;height:32px;border-radius:50%;background:var(--g);box-shadow:0 4px 10px #0000002a}
+.drow{display:flex;align-items:center;gap:12px;width:540px;height:24px}
+.drow span{font:700 13px var(--mono);color:var(--muted);width:76px}
+.drow b{font:700 13px var(--mono)}
+.abs-distance{height:22px;background:linear-gradient(90deg,var(--g),#fbbf24);border-radius:6px}
+.arrow-slot{width:130px;height:70px;border:2px dashed #cbd5e1;border-radius:16px;display:grid;place-items:center}
+.sign-arrow{width:110px;height:56px;display:grid;place-items:center;font-size:40px;line-height:1;color:#fff;background:var(--g);border-radius:12px}
+
+.wave-plot{display:grid;grid-template-columns:112px auto;row-gap:2px}
+.wave-y{position:relative;border-right:2px solid var(--ink)}
+.wave-y span{position:absolute;right:8px;top:calc(50% + var(--y));translate:0 -50%;font:700 12px/1.1 var(--mono);color:var(--ink);text-align:right;white-space:nowrap}
+.wave-y span small{display:block;font-size:10.5px;font-weight:600;color:var(--muted)}
+.wave-y span::after{content:'';position:absolute;right:-12px;top:50%;width:6px;border-top:2px solid var(--ink)}
+.wave{display:flex;gap:24px;align-items:center;height:150px;position:relative;padding:0 10px}
+.wave::before{content:'';position:absolute;left:0;right:0;top:50%;border-top:2px solid #94a3b8}
+.wave::after{content:'';position:absolute;left:0;right:0;top:calc(50% - 50px);height:100px;border-block:1px dashed #cbd5e1}
+.wave-dot{display:block;width:18px;height:18px;border-radius:50%;background:var(--g);position:relative;z-index:1}
+.wave-dot:nth-child(5){background:#f59e0b;outline:3px solid #fde68a}
+.wave-x{grid-column:2;display:flex;gap:24px;padding:0 10px}
+.wave-x span{width:18px;display:flex;justify-content:center;font:700 11px var(--mono);color:var(--muted);white-space:nowrap}
+.wave-x span:nth-child(5){color:#b45309}
+.wave-cap{grid-column:2;text-align:center;font-size:12px;color:var(--muted);margin-top:2px}
+.wave-cap code{font-size:11.5px}
+
+.ring{position:relative;width:300px;height:240px}
+.ring::before{content:'';position:absolute;left:50%;top:50%;width:calc(var(--r) * 2);height:calc(var(--r) * 2);translate:-50% -50%;border:2px dashed #cbd5e1;border-radius:50%}
+.ring::after{content:'';position:absolute;left:calc(50% - 4px);top:calc(50% - 4px);width:8px;height:8px;border-radius:50%;background:var(--ink);z-index:1}
+.ring-axis{position:absolute;background:#94a3b8}
+.ring-axis.ax-x{left:0;right:0;top:calc(50% - 1px);height:2px}
+.ring-axis.ax-y{top:0;bottom:0;left:calc(50% - 1px);width:2px}
+.ring-lab{position:absolute;font:700 12px var(--mono);color:var(--ink);white-space:nowrap}
+.ring-lab.lab-x{right:0;bottom:calc(50% + 4px)}
+.ring-lab.lab-y{left:calc(50% + 18px);bottom:0}
+.ring-lab.lab-o{right:calc(50% + 6px);top:calc(50% + 4px);font-size:10.5px;color:var(--muted)}
+.ring-dot{position:absolute;left:calc(50% - 14px);top:calc(50% - 14px);width:28px;height:28px;border-radius:50%;background:var(--g);color:#fff;font:700 12px/28px var(--mono);text-align:center;font-style:normal;z-index:2}
+.ring-deg{position:absolute;left:50%;top:50%;--a:calc(var(--i) * 45deg);translate:calc(-50% + cos(var(--a)) * (var(--r) + 30px)) calc(-50% + sin(var(--a)) * (var(--r) + 30px));font:700 11px var(--mono);color:var(--g);background:#fff;border:1px solid var(--line);padding:0 4px;border-radius:5px;z-index:2}
+.ring-key{position:absolute;right:20px;top:50%;translate:0 -50%;margin:0;font-size:12.5px;line-height:1.5;color:var(--muted);max-width:230px}
+
+.ramp-demo{display:flex;align-items:flex-end;height:100%;padding-bottom:8px}
+.ramp-wrap{position:relative;border-bottom:3px solid var(--ink)}
+.ramp{background:linear-gradient(160deg,#f9a8d4,var(--g))}
+.ramp-wrap .run{position:absolute;left:0;right:0;bottom:-24px;text-align:center;font:600 12px var(--mono);color:var(--muted)}
+.ramp-wrap .rise{position:absolute;left:calc(100% + 10px);bottom:0;font:700 13px var(--mono);color:var(--g);white-space:nowrap}
+.ramp-wrap .theta{position:absolute;right:calc(100% + 10px);bottom:0;font:700 13px var(--mono);color:var(--g)}
+
+.type-scale{display:flex;align-items:flex-end;gap:36px}
+.type-step{font-weight:800;letter-spacing:-.02em;line-height:1;color:var(--g);text-align:center}
+.type-step small{display:block;font:600 11px var(--mono);color:var(--muted);letter-spacing:0;margin-top:8px}
+
+.sqrt-demo{display:flex;align-items:center;justify-content:center;width:100%;height:100%}
+.sqrt-square{background:linear-gradient(135deg,#38bdf8,var(--g));border-radius:6px;display:grid;place-items:center;color:#fff;font:700 12px var(--mono);overflow:hidden}
+
+.hypot-demo{display:flex;align-items:center;justify-content:center;width:100%;height:100%}
+.hypot-box{position:relative;background:#e0f2fe;outline:2px solid #94a3b8}
+.hypot-box::before{content:'a';position:absolute;bottom:-24px;left:50%;font:700 13px var(--mono);color:var(--muted)}
+.hypot-box::after{content:'b';position:absolute;right:-18px;top:calc(50% - 10px);font:700 13px var(--mono);color:var(--muted)}
+.hypot-line{position:absolute;left:0;top:-1.5px;height:3px;border-radius:2px;background:var(--g);transform-origin:0 50%}
+
+.log-demo{display:grid;gap:7px}
+.lrow{display:grid;grid-template-columns:90px 600px 64px;gap:12px;align-items:center}
+.ltrack{height:24px;background:#fff repeating-linear-gradient(90deg,#dde3ee 0 1px,transparent 1px 25%);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.log-bar{height:100%;background:var(--g)}
+.lrow.mine .log-bar{background:#f59e0b}
+.lrow.mine .rlab{color:#b45309}
+
+.exp-chart{display:flex;align-items:flex-end;height:150px}
+.ecol{width:96px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px}
+.ecol b{font:700 12px var(--mono)}
+.ecol span{align-self:stretch;text-align:center;border-top:2px solid var(--ink);padding-top:3px;font:600 12px var(--mono);color:var(--muted)}
+.exp-bar{width:54px;background:linear-gradient(to top,var(--g),#7dd3fc);border-radius:6px 6px 0 0}
+.ecol.mine{margin-left:24px}
+.ecol.mine .exp-bar{background:#f59e0b}
+.ecol.mine b,.ecol.mine span{color:#b45309}
+
+/* ---------- static slides ---------- */
+.title-slide{justify-content:center;padding-left:90px;background:radial-gradient(circle at 78% 40%,#e0e7ff 0,transparent 32%),radial-gradient(circle at 8% 95%,#ccfbf1 0,transparent 35%),#fff}
+.title-wrap{max-width:620px;position:relative;z-index:1}
+.title-slide h1{font-size:96px;line-height:.95;letter-spacing:-.05em;margin:14px 0 20px}
+.title-slide h1 span{background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead.big{font-size:21px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 20px}
+.fn-chip{font:700 13px var(--mono);background:#fff;border:1px solid var(--line);border-bottom:2px solid var(--g);padding:4px 9px;border-radius:7px;color:var(--g)}
+.orbit-box{position:absolute;right:120px;top:calc(50% - 190px);width:380px;height:380px}
+.orbit{position:absolute;inset:0;animation:spin 40s linear infinite}
+.orbit i{position:absolute;left:calc(50% - 15px);top:calc(50% - 15px);width:30px;height:30px;border-radius:50%;
+  --a:calc(var(--i) * 30deg);
+  translate:calc(cos(var(--a)) * 160px) calc(sin(var(--a)) * 160px);
+  background:hsl(calc(235deg + var(--i) * 10deg) 75% 62%)}
+.orbit-core{position:absolute;inset:0;display:grid;place-items:center;text-align:center;font:800 46px var(--mono);color:var(--accent)}
+.orbit-core small{display:block;font:600 12px var(--mono);color:var(--muted);margin-top:6px}
+@keyframes spin{to{rotate:360deg}}
+@media (prefers-reduced-motion:reduce){.orbit{animation:none}.track{transition:none}}
+.kbd{display:inline-block;border:1px solid #cbd5e1;border-bottom-width:3px;border-radius:6px;padding:0 7px;font:600 12px var(--mono);background:#fff;color:var(--ink)}
+
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;flex:1;align-content:center}
+.acard{border:1px solid var(--line);border-top:4px solid var(--g);border-radius:16px;padding:18px 20px;background:#fff;cursor:pointer;text-align:left;color:inherit;transition:transform .15s,box-shadow .15s;display:flex;flex-direction:column;gap:10px}
+.acard:hover{transform:translateY(-3px);box-shadow:0 12px 26px #1720331a}
+.acard h3{margin:0;font-size:20px}
+.acard p{margin:0;color:var(--muted);font-size:14.5px}
+.acard .fns{display:flex;flex-wrap:wrap;gap:6px}
+.acard .go{font-size:12px;font-weight:700;color:var(--g);margin-top:auto}
+.acard.plain{cursor:default;background:var(--soft)}
+.acard.plain:hover{transform:none;box-shadow:none}
+.acard ol{margin:0;padding-left:20px;font-size:14.5px;color:var(--ink)}
+.acard ol li{margin:3px 0}
+
+.units-grid{display:grid;grid-template-columns:1.55fr 1fr;gap:26px;flex:1;min-height:0;align-items:start}
+.tbl{width:100%;border-collapse:collapse;font-size:15px}
+.tbl th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:8px 12px;border-bottom:2px solid var(--line)}
+.tbl td{padding:8px 12px;border-bottom:1px solid var(--line)}
+.tbl tr:last-child td{border-bottom:0}
+.tbl td:first-child code{color:var(--g);font-weight:700}
+.flow{display:grid;gap:8px}
+.flow .step{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.flow .step span{display:block;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.flow .step code{font-size:17px;font-weight:700}
+.flow .step.res{border-color:var(--g);background:#eef2ff}
+.flow .arr{text-align:center;color:var(--muted);font-size:18px;line-height:1}
+.note{margin-top:14px;font-size:14px;color:var(--muted);border-left:4px solid var(--accent2);background:#eafaf6;border-radius:0 10px 10px 0;padding:10px 14px}
+
+.cheat{display:grid;grid-template-columns:1fr 1fr;gap:26px}
+.cheat .tbl td{padding:6px 12px;font-size:14px}
+.cheat .tbl td:first-child{white-space:nowrap}
+.rules{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:auto}
+.rule{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:10px 14px;font-size:13.5px}
+.rule b{display:block;font-size:14px;margin-bottom:2px}
+
+/* ---------- small screens: fluid, scrollable slides ---------- */
+body.fluid .canvas{left:0;top:0;width:100%;height:100%;transform:none;border-radius:0;box-shadow:none}
+body.fluid .slide{padding:18px 16px 34px;overflow-y:auto}
+body.fluid .head{flex-direction:column;gap:10px}
+body.fluid .syntax{text-align:left}
+body.fluid h2{font-size:28px}
+body.fluid .bottom,body.fluid .units-grid,body.fluid .cheat,body.fluid .grid3,body.fluid .rules{grid-template-columns:1fr}
+body.fluid .bottom{flex:none}
+body.fluid .preview{height:auto;min-height:210px;overflow-x:auto;justify-content:flex-start;padding-top:24px}
+body.fluid .title-slide{padding-left:16px}
+body.fluid .title-slide h1{font-size:56px}
+body.fluid .orbit-box{display:none}
+body.fluid .ring-key{position:static;translate:none;flex:none}
+body.fluid .dots{display:none}
+body.fluid .counter{min-width:0}
+
+@media print{
+  @page{size:1280px 720px;margin:0}
+  body{overflow:visible;background:#fff}
+  .viewport{position:static}
+  .canvas{position:static!important;transform:none!important;width:1280px!important;height:auto!important;box-shadow:none;border-radius:0}
+  .track{display:block;transform:none!important}
+  .slide{width:1280px;height:720px;break-after:page}
+  .nav,.progress,.copy,.btn{display:none}
+}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="viewport">
+<div class="canvas" id="canvas">
+<div class="track" id="track">
+
+<!-- ============ 1 TITLE ============ -->
+<section class="slide title-slide" data-title="Welcome">
+  <div class="title-wrap">
+    <div class="eyebrow" style="--g:var(--accent)">Frontend team · Learning session</div>
+    <h1>CSS Math<br><span>Functions</span></h1>
+    <p class="lead big">Let the browser do the math. Responsive, flexible layouts with only CSS, no JavaScript.</p>
+    <div class="chips">
+      <span class="fn-chip g-core">calc()</span><span class="fn-chip g-core">min()</span><span class="fn-chip g-core">max()</span><span class="fn-chip g-core">clamp()</span>
+      <span class="fn-chip g-round">round()</span><span class="fn-chip g-round">mod()</span><span class="fn-chip g-round">rem()</span>
+      <span class="fn-chip g-sign">abs()</span><span class="fn-chip g-sign">sign()</span>
+      <span class="fn-chip g-trig">sin()</span><span class="fn-chip g-trig">cos()</span><span class="fn-chip g-trig">tan()</span>
+      <span class="fn-chip g-pow">pow()</span><span class="fn-chip g-pow">sqrt()</span><span class="fn-chip g-pow">hypot()</span><span class="fn-chip g-pow">log()</span><span class="fn-chip g-pow">exp()</span>
+    </div>
+    <p class="lead" style="font-size:14px">Press <span class="kbd">→</span> to start · <span class="kbd">F</span> for full screen</p>
+  </div>
+  <div class="orbit-box" aria-hidden="true">
+    <div class="orbit" id="orbit"></div>
+    <div class="orbit-core"><div>f(x)<small>drawn with cos() + sin()</small></div></div>
+  </div>
+</section>
+
+<!-- ============ 2 AGENDA ============ -->
+<section class="slide" data-title="Agenda">
+  <header class="head"><div><div class="eyebrow" style="--g:var(--accent)">Roadmap</div><h2>What we’ll cover</h2><p class="lead">17 functions in 5 groups. Click a card to jump straight to it.</p></div></header>
+  <div class="grid3">
+    <button class="acard g-core" data-go="4"><h3>Core layout</h3><p>Sizes that adapt to the screen.</p><div class="fns"><span class="fn-chip">calc()</span><span class="fn-chip">min()</span><span class="fn-chip">max()</span><span class="fn-chip">clamp()</span></div><span class="go">Slides 4–7 →</span></button>
+    <button class="acard g-round" data-go="8"><h3>Rounding &amp; remainders</h3><p>Snap to steps, find leftovers.</p><div class="fns"><span class="fn-chip">round()</span><span class="fn-chip">mod()</span><span class="fn-chip">rem()</span></div><span class="go">Slides 8–10 →</span></button>
+    <button class="acard g-sign" data-go="11"><h3>Size &amp; direction</h3><p>Split a value into “how much” and “which way”.</p><div class="fns"><span class="fn-chip">abs()</span><span class="fn-chip">sign()</span></div><span class="go">Slides 11–12 →</span></button>
+    <button class="acard g-trig" data-go="13"><h3>Trigonometry</h3><p>Waves, circles and slopes.</p><div class="fns"><span class="fn-chip">sin()</span><span class="fn-chip">cos()</span><span class="fn-chip">tan()</span></div><span class="go">Slides 13–15 →</span></button>
+    <button class="acard g-pow" data-go="16"><h3>Powers &amp; logs</h3><p>Scales, roots, diagonals, growth.</p><div class="fns"><span class="fn-chip">pow()</span><span class="fn-chip">sqrt()</span><span class="fn-chip">hypot()</span><span class="fn-chip">log()</span><span class="fn-chip">exp()</span></div><span class="go">Slides 16–20 →</span></button>
+    <div class="acard plain" style="--g:#64748b"><h3>How every slide works</h3><ol><li><b>Live example</b>: move the slider</li><li><b>The CSS</b> below it is the exact code drawing it</li><li><b>How it works</b>: the math, step by step</li></ol><span class="go" style="color:var(--muted)">Cheat sheet on slide 21</span></div>
+  </div>
+</section>
+
+<!-- ============ 3 UNITS ============ -->
+<section class="slide" data-title="Units">
+  <header class="head"><div><div class="eyebrow" style="--g:var(--accent)">Warm-up</div><h2>Units the browser converts for you</h2><p class="lead">Before any math happens, the browser turns every unit into a real size. Then it runs the calculation.</p></div></header>
+  <div class="units-grid">
+    <table class="tbl">
+      <thead><tr><th>Unit</th><th>Relative to</th><th>Example</th><th>Becomes</th></tr></thead>
+      <tbody>
+        <tr><td><code>px</code></td><td>Fixed size</td><td><code>16px</code></td><td>16px</td></tr>
+        <tr><td><code>rem</code></td><td>Root font size (16px)</td><td><code>2rem</code></td><td>2 × 16 = <b>32px</b></td></tr>
+        <tr><td><code>em</code></td><td>Element’s font size (20px)</td><td><code>1.5em</code></td><td>1.5 × 20 = <b>30px</b></td></tr>
+        <tr><td><code>%</code></td><td>Parent size (500px)</td><td><code>50%</code></td><td>500 × 0.5 = <b>250px</b></td></tr>
+        <tr><td><code>vw</code></td><td>Viewport width (1000px)</td><td><code>5vw</code></td><td>1000 × 0.05 = <b>50px</b></td></tr>
+        <tr><td><code>vh</code></td><td>Viewport height (800px)</td><td><code>10vh</code></td><td>800 × 0.10 = <b>80px</b></td></tr>
+        <tr><td><code>cqw</code></td><td>Container width (600px)</td><td><code>7cqw</code></td><td>600 × 0.07 = <b>42px</b></td></tr>
+        <tr><td><code>deg</code> / <code>turn</code></td><td>Angles</td><td><code>0.25turn</code></td><td>= <b>90deg</b></td></tr>
+      </tbody>
+    </table>
+    <div>
+      <div class="flow">
+        <div class="step"><span>1 · You write</span><code>width: calc(100% - 40px);</code></div>
+        <div class="arr">↓</div>
+        <div class="step"><span>2 · Browser converts</span><code>100% = 500px</code></div>
+        <div class="arr">↓</div>
+        <div class="step"><span>3 · Browser calculates</span><code>500px − 40px</code></div>
+        <div class="arr">↓</div>
+        <div class="step res"><span>4 · One final value</span><code>width: 460px</code></div>
+      </div>
+      <p class="note">In the demos we use <code>cqw</code> (1% of the <em>box</em> width) so a slider can resize the example. On a real page you’d often use <code>vw</code> instead.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4 CALC ============ -->
+<section class="slide g-core" data-title="calc()" data-supports="width: calc(100% - 40px)">
+  <header class="head">
+    <div><div class="eyebrow">Core layout · 1 of 4</div><h2><code>calc()</code>: do the math</h2><p class="lead">Add, subtract, multiply and divide, and mix units like <code>%</code> and <code>px</code> in a single value.</p></div>
+    <div class="syntax"><div class="label">Syntax</div><div class="box">calc(a + b)</div><span class="support"></span></div>
+  </header>
+  <div class="stage">
+    <div class="stage-top"><span class="tag">Live example</span>
+      <label class="ctrl">Container width <input type="range" min="200" max="760" value="520" data-target="#calc-frame" data-prop="width" data-unit="px"><output></output></label>
+    </div>
+    <div class="preview"><div class="frame" id="calc-frame"><div class="demo-box calc-box" id="calc-read"></div></div></div>
+  </div>
+  <div class="bottom">
+    <div class="codecard"><div class="codebar"><i></i><i></i><i></i><span>style.css</span><button class="copy">Copy</button></div><pre class="code" data-from="css-calc"></pre></div>
+    <div class="how"><h4>How it works</h4><ol class="steps" id="how-calc"></ol><p class="use"><b>Use it for:</b> full width minus a sidebar or gap, offsetting a fixed header, spacing maths.</p></div>
+  </div>
+<style id="css-calc">
+.calc-box {
+  width: calc(100% - 40px);   /* full width minus 40px */
+}
+
+/* Spaces around + and - are required:
+   calc(100% - 40px)  ✅      calc(100%-40px)  ❌ */
+</style>
+</section>
+
+<!-- ============ 5 MIN ============ -->
+<section class="slide g-core" data-title="min()" data-supports="width: min(90%, 360px)">
+  <header class="head">
+    <div><div class="eyebrow">Core layout · 2 of 4</div><h2><code>min()</code>: pick the smallest</h2><p class="lead">Returns the smallest value in the list. Use it to set a <b>maximum</b> size that can still shrink.</p></div>
+    <div class="syntax"><div class="label">Syntax</div><div class="box">min(a, b, …)</div><span class="support"></span></div>
+  </header>
+  <div class="stage">
+    <div class="stage-top"><span class="tag">Live example</span>
+      <label class="ctrl">Container width <input type="range" min="200" max="760" value="600" data-target="#min-frame" data-prop="width" data-unit="px"><output></output></label>
+      <span class="hint">Below 400px the box shrinks; above it, it stops at 360px</span>
+    </div>
+    <div class="preview"><div class="frame" id="min-frame"><div class="demo-box min-box" id="min-read"></div></div></div>
+  </div>
+  <div class="bottom">
+    <div class="codecard"><div class="codebar"><i></i><i></i><i></i><span>style.css</span><button class="copy">Copy</button></div><pre class="code" data-from="css-min"></pre></div>
+    <div class="how"><h4>How it works</h4><ol class="steps" id="how-min"></ol><p class="use"><b>Use it for:</b> page containers like <code>min(90%, 1200px)</code>, images that should never get too big.</p></div>
+  </div>
+<style id="css-min">
+.min-box {
+  width: min(90%, 360px);   /* 90% … but never more than 360px */
+}
+</style>
+</section>
+
+<!-- ============ 6 MAX ============ -->
+<section class="slide g-core" data-title="max()" data-supports="width: max(40%, 200px)">
+  <header class="head">
+    <div><div class="eyebrow">Core layout · 3 of 4</div><h2><code>max()</code>: pick the largest</h2><p class="lead">Returns the largest value in the list. Use it to set a <b>minimum</b> size that can still grow.</p></div>
+    <div class="syntax"><div class="label">Syntax</div><div class="box">max(a, b, …)</div><span class="support"></span></div>
+  </header>
+  <div class="stage">
+    <div class="stage-top"><span class="tag">Live example</span>
+      <label class="ctrl">Container width <input type="range" min="200" max="760" value="320" data-target="#max-frame" data-prop="width" data-unit="px"><output></output></label>
+      <span class="hint">Below 500px the box stays at 200px; above it, it grows</span>
+    </div>
+    <div class="preview"><div class="frame" id="max-frame"><div class="demo-box max-box" id="max-read"></div></div></div>
+  </div>
+  <div class="bottom">
+    <div class="codecard"><div class="codebar"><i></i><i></i><i></i><span>style.css</span><button class="copy">Copy</button></div><pre class="code" data-from="css-max"></pre></div>
+    <div class="how"><h4>How it works</h4><ol class="steps" id="how-max"></ol><p class="use"><b>Use it for:</b> padding or text that must never get too small, e.g. <code>max(16px, 3vw)</code>.</p></div>
+  </div>
+<style id="css-max">
+.max-box {
+  width: max(40%, 200px);   /* 40% … but never less than 200px */
+}
+</style>
+</section>
+
+<!-- ============ 7 CLAMP ============ -->
+<section class="slide g-core" data-title="clamp()" data-supports="font-size: clamp(18px, 7cqw, 48px)">
+  <header class="head">
+    <div><div class="eyebrow">Core layout · 4 of 4</div><h2><code>clamp()</code>: min, fluid, max</h2><p class="lead">Keeps a fluid value between a minimum and a maximum. Perfect for responsive text, with no media queries.</p></div>
+    <div class="syntax"><div class="label">Syntax</div><div class="box">clamp(MIN, PREFERRED, MAX)</div><span class="support"></span></div>
+  </header>
+  <div class="stage">
+    <div class="stage-top"><span class="tag">Live example</span>
+      <label class="ctrl">Container width <input type="range" min="200" max="760" value="480" data-target="#clamp-frame" data-prop="width" data-unit="px"><output></output></label>
+    </div>
+    <div class="preview"><div class="frame" id="clamp-frame"><div class="clamp-title">Responsive heading</div><span class="read" id="clamp-read"></span></div></div>
+  </div>
+  <div class="bottom">
+    <div class="codecard"><div class="codebar"><i></i><i></i><i></i><span>style.css</span><button class="copy">Copy</button></div><pre class="code" data-from="css-clamp"></pre></div>
+    <div class="how"><h4>How it works</h4><ol class="steps" id="how-clamp"></ol><p class="use"><b>Use it for:</b> fluid headings, section spacing and card padding, e.g. <code>clamp(1rem, 3vw, 2rem)</code>.</p></div>
+  </div>
+<style id="css-clamp">
+.frame {
+  container-type: inline-size;   /* lets children use cqw */
+}
+
+.clamp-title {
+  /* at least 18px · ideally 7% of the box · at most 48px */
+  font-size: clamp(18px, 7cqw, 48px);
+}
+</style>
+</section>
+
+<!-- ============ 8 ROUND ============ -->
+<section class="slide g-round" data-title="round()" data-supports="width: round(nearest, 137px, 50px)">
+  <header class="head">
+    <div><div class="eyebrow">Rounding &amp; remainders · 1 of 3</div><h2><code>round()</code>: snap to a step</h2><p class="lead">Rounds a value to a multiple of a step, like snapping to a grid. The grey lines below are every 50px.</p></div>
+    <div class="syntax"><div class="label">Syntax</div><div class="box">round(strategy, value, step)</div><span class="support"></span></div>
+  </header>
+  <div class="stage">
+    <div class="stage-top"><span class="tag">Live example</span>
+      <label class="ctrl">--value <input type="range" id="round-input" min="0" max="480" value="137" data-target="#round-demo" data-prop="--value" data-unit="px"><output></output></label>
+    </div>
+    <div class="preview">
+      <div class="round-demo" id="round-demo">
+        <div class="rrow"><span class="rlab">value</span><div class="rtrack"><div class="rbar round-raw"></div></div><b id="rr-raw"></b></div>
+        <div class="rrow"><span class="rlab">nearest</span><div class="rtrack"><div class="rbar round-nearest"></div></div><b id="rr-nearest"></b></div>
+        <div class="rrow"><span class="rlab">up</span><div class="rtrack"><div class="rbar round-up"></div></div><b id="rr-up"></b></div>
+        <div class="rrow"><span class="rlab">down</span><div class="rtrack"><div class="rbar round-down"></div></div><b id="rr-down"></b></div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom">
+    <div class="codecard"><div class="codebar"><i></i><i></i><i></i><span>style.css</span><button class="copy">Copy</button></div><pre class="code" data-from="css-round"></pre></div>
+    <div class="how"><h4>How it works</h4><ol class="steps" id="how-round"></ol><p class="use"><b>Use it for:</b> snapping sizes to an 8px design grid, avoiding blurry half-pixel values.</p></div>
+  </div>
+<style id="css-round">
+.round-demo { --value: 137px; }   /* the slider changes this */
+
+.round-raw     { width: var(--value); }
+.round-nearest { width: round(nearest, var(--value), 50px); }
+.round-up      { width: round(up, var(--value), 50px); }
+.round-down    { width: round(down, var(--value), 50px); }
+</style>
+</section>
+
+<!-- ============ 9 MOD ============ -->
+<section class="slide g-round tall" data-title="mod()" data-supports="width: mod(10px, 3px)">
+  <header class="head">
+    <div><div class="eyebrow">Rounding &amp; remainders · 2 of 3</div><h2><code>mod()</code>: what’s left over</h2><p class="lead">Divide A by B and keep only the <b>leftover</b>. Example: how much space is left after fitting as many 100px pieces as possible?</p></div>
+    <div class="syntax"><div class="label">Syntax</div><div class="box">mod(A, B)</div><span class="support"></span></div>
+  </header>
+  <div class="stage">
+    <div class="stage-top"><span class="tag">Live example</span>
+      <label class="ctrl">--width <input type="range" id="mod-input" min="0" max="500" step="10" value="270" data-target="#mod-demo" data-prop="--width" data-unit="px"><output></output></label>
+    </div>
+    <div class="preview"><div class="calc-wrap">
+      <div class="round-demo" id="mod-demo">
+        <div class="rrow"><span class="rlab">width</span><div class="rtrack"><div class="rbar mod-full"></div></div><b id="mod-read-full"></b></div>
+        <div class="rrow"><span class="rlab">leftover</span><div class="rtrack"><div class="rbar mod-left"></div></div><b id="mod-read-left"></b></div>
+      </div>
+      <table class="ctable"><thead><tr><th>Dividend<small>A = --width</small></th><th>Divisor<small>B = piece size</small></th><th>A ÷ B</th><th>Whole pieces<small>round down</small></th><th>B × whole</th><th>Remainder<small>A − (B × whole)</small></th></tr></thead><tbody><tr id="mod-row"></tr></tbody></table>
+    </div></div>
+  </div>
+  <div class="bottom">
+    <div class="codecard"><div class="codebar"><i></i><i></i><i></i><span>style.css</span><button class="copy">Copy</button></div><pre class="code" data-from="css-mod"></pre></div>
+    <div class="how"><h4>How it works</h4><ol class="steps" id="how-mod"></ol><p class="use"><b>Use it for:</b> finding leftover space in a row, e.g. how much room remains after fixed-size cards. <a class="demo-link" href="mod-center-cards.html" target="_blank">Real example: center a row of cards →</a></p></div>
+  </div>
+<style id="css-mod">
+#mod-demo { --width: 270px; }   /* the slider changes this */
+
+.mod-full { width: var(--width); }
+.mod-left { width: mod(var(--width), 100px); }  /* 270px → 70px */
+</style>
+</section>
+
+<!-- ============ 10 REM ============ -->
+<section class="slide g-round tall" data-title="rem()" data-supports="width: rem(10px, 3px)">
+  <header class="head">
+    <div><div class="eyebrow">Rounding &amp; remainders · 3 of 3</div><h2><code>rem()</code>: leftover that keeps the minus</h2><p class="lead">Same as <code>mod()</code> for positive values. For a <b>negative</b> value, <code>mod()</code> gives a positive answer, but <code>rem()</code> keeps the minus sign.</p></div>
+    <div class="syntax"><div class="label">Syntax</div><div class="box">rem(A, B)</div><span class="support"></span></div>
+  </header>
+  <div class="stage">
+    <div class="stage-top"><span class="tag">Live example</span>
+      <label class="ctrl">--x <input type="range" id="rem-input" min="-200" max="200" step="10" value="-150" data-target="#rem-demo" data-prop="--x" data-unit="px"><output></output></label>
+      <span class="hint">Try negative and positive values</span>
+    </div>
+    <div class="preview"><div class="calc-wrap">
+      <div class="round-demo" id="rem-demo">
+        <div class="rrow"><span class="rlab">--x</span><div class="rtrack ntrack"><div class="nbar n-value"></div></div><b id="rem-read-val"></b></div>
+        <div class="rrow"><span class="rlab">mod</span><div class="rtrack ntrack"><div class="nbar n-mod"></div></div><b id="rem-read-mod"></b></div>
+        <div class="rrow"><span class="rlab">rem</span><div class="rtrack ntrack"><div class="nbar n-rem"></div></div><b id="rem-read-rem"></b></div>
+      </div>
+      <table class="ctable"><thead><tr><th></th><th>Dividend<small>A = --x</small></th><th>Divisor<small>B</small></th><th>A ÷ B</th><th>Whole<small>how it rounds</small></th><th>B × whole</th><th>Remainder<small>A − (B × whole)</small></th></tr></thead><tbody><tr id="rem-row-mod"></tr><tr id="rem-row-rem"></tr></tbody></table>
+    </div></div>
+  </div>
+  <div class="bottom">
+    <div class="codecard"><div class="codebar"><i></i><i></i><i></i><span>style.css</span><button class="copy">Copy</button></div><pre class="code" data-from="css-rem"></pre></div>
+    <div class="how"><h4>How it works</h4><ol class="steps" id="how-rem"></ol><p class="use"><b>Use it for:</b> leftovers where the direction matters, e.g. an offset that can move left (−) or right (+).</p></div>
+  </div>
+<style id="css-rem">
+#rem-demo { --x: -150px; }   /* the slider changes this */
+
+/* --v = bar length: + goes right, − goes left */
+.n-value { --v: var(--x); }
+.n-mod   { --v: mod(var(--x), 100px); }  /* -150px → 50px  */
+.n-rem   { --v: rem(var(--x), 100px); }  /* -150px → -50px */
+</style>
+</section>
+
+<!-- ============ 11 ABS ============ -->
+<section class="slide g-sign" data-title="abs()" data-supports="width: abs(-10px)">
+  <header class="head">
+    <div><div class="eyebrow">Size &amp; direction · 1 of 2</div><h2><code>abs()</code>: distance from zero</h2><p class="lead">Removes the minus sign and keeps the unit: <code>abs(-120px)</code> = <code>120px</code>. It answers “how far?”, not “which way?”.</p></div>
+    <div class="syntax"><div class="label">Syntax</div><div class="box">abs(value)</div><span class="support"></span></div>
+  </header>
+  <div class="stage">
+    <div class="stage-top"><span class="tag">Live example</span>
+      <label class="ctrl">--x <input type="range" id="abs-input" min="-240" max="240" value="-120" data-target="#abs-demo" data-prop="--x" data-unit="px"><output></output></label>
+    </div>
+    <div class="preview">
+      <div class="xdemo abs-demo" id="abs-demo">
+        <div class="xtrack"><div class="xdot abs-dot"></div></div>
+        <div class="drow"><span>distance</span><div class="abs-distance"></div><b id="abs-read"></b></div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom">
+    <div class="codecard"><div class="codebar"><i></i><i></i><i></i><span>style.css</span><button class="copy">Copy</button></div><pre class="code" data-from="css-abs"></pre></div>
+    <div class="how"><h4>How it works</h4><ol class="steps" id="how-abs"></ol><p class="use"><b>Use it for:</b> distances, effects that grow equally on both sides of a center or a breakpoint.</p></div>
+  </div>
+<style id="css-abs">
+.abs-demo { --x: -120px; }   /* the slider changes this */
+
+.abs-dot      { translate: var(--x); }      /* can be negative */
+.abs-distance { width: abs(var(--x)); }     /* always positive */
+</style>
+</section>
+
+<!-- ============ 12 SIGN ============ -->
+<section class="slide g-sign" data-title="sign()" data-supports="width: calc(sign(-5px) * 1px)">
+  <header class="head">
+    <div><div class="eyebrow">Size &amp; direction · 2 of 2</div><h2><code>sign()</code>: which direction?</h2><p class="lead">Returns <code>-1</code>, <code>0</code> or <code>1</code>, always <b>without a unit</b>. Every value = <code>sign(x) × abs(x)</code>.</p></div>
+    <div class="syntax"><div class="label">Syntax</div><div class="box">sign(value) → -1 | 0 | 1</div><span class="support"></span></div>
+  </header>
+  <div class="stage">
+    <div class="stage-top"><span class="tag">Live example</span>
+      <label class="ctrl">--x <input type="range" id="sign-input" min="-240" max="240" value="90" data-target="#sign-demo" data-prop="--x" data-unit="px"><output></output></label>
+      <span class="hint">Try exactly 0</span>
+    </div>
+    <div class="preview">
+      <div class="xdemo sign-demo" id="sign-demo">
+        <div class="xtrack"><div class="xdot sign-dot"></div></div>
+        <div class="arrow-slot"><div class="sign-arrow">➜</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom">
+    <div class="codecard"><div class="codebar"><i></i><i></i><i></i><span>style.css</span><button class="copy">Copy</button></div><pre class="code" data-from="css-sign"></pre></div>
+    <div class="how"><h4>How it works</h4><ol class="steps" id="how-sign"></ol><p class="use"><b>Use it for:</b> flipping icons or movement based on whether a value is positive or negative.</p></div>
+  </div>
+<style id="css-sign">
+.sign-demo { --x: 90px; }   /* the slider changes this */
+
+.sign-dot   { translate: var(--x); }
+.sign-arrow {
+  scale: sign(var(--x)) 1;   /* 1 → right · -1 → flipped · 0 → hidden */
+}
+</style>
+</section>
+
+<!-- ============ 13 SIN ============ -->
+<section class="slide g-trig" data-title="sin()" data-supports="width: calc(sin(30deg) * 1px)">
+  <header class="head">
+    <div><div class="eyebrow">Trigonometry · 1 of 3</div><h2><code>sin()</code>: make a wave</h2><p class="lead">Takes an angle and returns a number from −1 to 1. Multiply it by a length to move things up and down in a smooth wave.</p></div>
+    <div class="syntax"><div class="label">Syntax</div><div class="box">sin(angle) → −1 … 1</div><span class="support"></span></div>
+  </header>
+  <div class="stage">
+    <div class="stage-top"><span class="tag">Live example</span>
+      <label class="ctrl">--phase <input type="range" id="sin-input" min="0" max="360" value="0" data-target="#wave" data-prop="--phase" data-unit="deg"><output></output></label>
+      <button class="btn" id="sin-play">▶ Play</button>
+    </div>
+    <div class="preview"><div class="wave-plot">
+      <div class="wave-y"><span style="--y: -50px">−50px <small>sin = −1</small></span><span style="--y: 0px">0px <small>sin = 0</small></span><span style="--y: 50px">+50px <small>sin = 1</small></span></div>
+      <div class="wave" id="wave"></div>
+      <div class="wave-x" id="wave-x"></div>
+      <div class="wave-cap"><b>x-axis:</b> angle of each dot (deg) · <b>y-axis:</b> <code>sin(angle) × 50px</code> (in CSS, + is down)</div>
+    </div></div>
+  </div>
+  <div class="bottom">
+    <div class="codecard"><div class="codebar"><i></i><i></i><i></i><span>style.css</span><button class="copy">Copy</button></div><pre class="code" data-from="css-sin"></pre></div>
+    <div class="how"><h4>How it works</h4><ol class="steps" id="how-sin"></ol><p class="use"><b>Use it for:</b> wavy text, staggered animations, bouncing and floating effects.</p></div>
+  </div>
+<style id="css-sin">
+/* HTML: <i class="wave-dot" style="--i: 0"></i> … up to --i: 15 */
+.wave { --phase: 0deg; }   /* the slider changes this */
+
+.wave-dot {
+  --angle: calc(var(--i) * 24deg + var(--phase));
+  translate: 0 calc(sin(var(--angle)) * 50px);   /* −50px … 50px */
+}
+</style>
+</section>
+
+<!-- ============ 14 COS ============ -->
+<section class="slide g-trig tall" data-title="cos()" data-supports="width: calc(cos(30deg) * 1px)">
+  <header class="head">
+    <div><div class="eyebrow">Trigonometry · 2 of 3</div><h2><code>cos()</code>: place items on a circle</h2><p class="lead"><code>cos()</code> gives the <b>x</b> (across) and <code>sin()</code> gives the <b>y</b> (down) of a point on a circle. Together they make radial layouts.</p></div>
+    <div class="syntax"><div class="label">Syntax</div><div class="box">cos(angle) → −1 … 1</div><span class="support"></span></div>
+  </header>
+  <div class="stage">
+    <div class="stage-top"><span class="tag">Live example</span>
+      <label class="ctrl">--r (radius) <input type="range" id="cos-input" min="30" max="80" value="80" data-target="#ring" data-prop="--r" data-unit="px"><output></output></label>
+    </div>
+    <div class="preview"><div class="ring" id="ring">
+      <i class="ring-axis ax-x"></i><i class="ring-axis ax-y"></i>
+      <span class="ring-lab lab-x">+x →</span><span class="ring-lab lab-y">+y ↓</span><span class="ring-lab lab-o">(0, 0)</span>
+    </div><p class="ring-key">Number in a dot = <b>i</b> · label = its <b>angle</b><br>0° points right, angles turn <b>clockwise</b><br>(CSS y grows <b>down</b>)</p></div>
+  </div>
+  <div class="bottom">
+    <div class="codecard"><div class="codebar"><i></i><i></i><i></i><span>style.css</span><button class="copy">Copy</button></div><pre class="code" data-from="css-cos"></pre></div>
+    <div class="how"><h4>How it works</h4><ol class="steps" id="how-cos"></ol><p class="use"><b>Use it for:</b> circular menus, clock faces, avatars around a center.</p></div>
+  </div>
+<style id="css-cos">
+/* HTML: <i class="ring-dot" style="--i: 0">0</i> … up to --i: 7 */
+.ring { --r: 80px; }   /* the slider changes this */
+
+.ring-dot {
+  --a: calc(var(--i) * 45deg);            /* 8 dots × 45° = 360° */
+  translate: calc(cos(var(--a)) * var(--r))      /* x */
+             calc(sin(var(--a)) * var(--r));     /* y */
+}
+</style>
+</section>
+
+<!-- ============ 15 TAN ============ -->
+<section class="slide g-trig" data-title="tan()" data-supports="width: calc(tan(30deg) * 1px)">
+  <header class="head">
+    <div><div class="eyebrow">Trigonometry · 3 of 3</div><h2><code>tan()</code>: from angle to slope</h2><p class="lead">For a slope: <b>height = width × tan(angle)</b>. Choose an angle and CSS works out exactly how tall the shape must be.</p></div>
+    <div class="syntax"><div class="label">Syntax</div><div class="box">tan(angle) = sin / cos</div><span class="support"></span></div>
+  </header>
+  <div class="stage">
+    <div class="stage-top"><span class="tag">Live example</span>
+      <label class="ctrl">--angle <input type="range" id="tan-input" min="5" max="52" value="30" data-target="#ramp-demo" data-prop="--angle" data-unit="deg"><output></output></label>
+    </div>
+    <div class="preview">
+      <div class="ramp-demo" id="ramp-demo">
+        <div class="ramp-wrap"><div class="ramp"></div><span class="theta" id="tan-theta"></span><span class="rise" id="tan-read"></span><span class="run">150px</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom">
+    <div class="codecard"><div class="codebar"><i></i><i></i><i></i><span>style.css</span><button class="copy">Copy</button></div><pre class="code" data-from="css-tan"></pre></div>
+    <div class="how"><h4>How it works</h4><ol class="steps" id="how-tan"></ol><p class="use"><b>Use it for:</b> slanted section dividers and diagonal shapes with an exact angle.</p></div>
+  </div>
+<style id="css-tan">
+.ramp-demo { --angle: 30deg; }   /* the slider changes this */
+
+.ramp {
+  width: 150px;
+  height: calc(tan(var(--angle)) * 150px);       /* rise = run × tan */
+  clip-path: polygon(0 100%, 100% 100%, 100% 0);  /* triangle */
+}
+</style>
+</section>
+
+<!-- ============ 16 POW ============ -->
+<section class="slide g-pow" data-title="pow()" data-supports="width: calc(pow(2, 3) * 1px)">
+  <header class="head">
+    <div><div class="eyebrow">Powers &amp; logs · 1 of 5</div><h2><code>pow()</code>: multiply by itself</h2><p class="lead"><code>pow(2, 3)</code> = 2 × 2 × 2 = 8. Numbers only, so multiply by a unit afterwards. The classic use is a type scale.</p></div>
+    <div class="syntax"><div class="label">Syntax</div><div class="box">pow(base, exponent)</div><span class="support"></span></div>
+  </header>
+  <div class="stage">
+    <div class="stage-top"><span class="tag">Live example</span>
+      <label class="ctrl">--ratio <input type="range" id="pow-input" min="1.1" max="1.5" step="0.05" value="1.25" data-target="#type-scale" data-prop="--ratio" data-unit=""><output></output></label>
+    </div>
+    <div class="preview">
+      <div class="type-scale" id="type-scale">
+        <div class="type-step" style="--step: 0">Aa<small></small></div>
+        <div class="type-step" style="--step: 1">Aa<small></small></div>
+        <div class="type-step" style="--step: 2">Aa<small></small></div>
+        <div class="type-step" style="--step: 3">Aa<small></small></div>
+        <div class="type-step" style="--step: 4">Aa<small></small></div>
+      </div>
+    </div>
+  </div>
+  <div class="bottom">
+    <div class="codecard"><div class="codebar"><i></i><i></i><i></i><span>style.css</span><button class="copy">Copy</button></div><pre class="code" data-from="css-pow"></pre></div>
+    <div class="how"><h4>How it works</h4><ol class="steps" id="how-pow"></ol><p class="use"><b>Use it for:</b> modular type scales (h6 → h1) and exponential spacing.</p></div>
+  </div>
+<style id="css-pow">
+/* HTML: <div class="type-step" style="--step: 0">Aa</div> … --step: 4 */
+.type-scale { --ratio: 1.25; }   /* the slider changes this */
+
+.type-step {
+  font-size: calc(16px * pow(var(--ratio), var(--step)));
+}
+</style>
+</section>
+
+<!-- ============ 17 SQRT ============ -->
+<section class="slide g-pow" data-title="sqrt()" data-supports="width: calc(sqrt(4) * 1px)">
+  <header class="head">
+    <div><div class="eyebrow">Powers &amp; logs · 2 of 5</div><h2><code>sqrt()</code>: square root</h2><p class="lead">The number that, multiplied by itself, gives the value: <code>sqrt(25)</code> = 5. Here we give a square an <b>area</b> and CSS finds its side.</p></div>
+    <div class="syntax"><div class="label">Syntax</div><div class="box">sqrt(number)</div><span class="support"></span></div>
+  </header>
+  <div class="stage">
+    <div class="stage-top"><span class="tag">Live example</span>
+      <label class="ctrl">--area (px²) <input type="range" id="sqrt-input" min="400" max="36100" step="100" value="10000" data-target="#sqrt-demo" data-prop="--area" data-unit=""><output></output></label>
+    </div>
+    <div class="preview"><div class="sqrt-demo" id="sqrt-demo"><div class="sqrt-square" id="sqrt-read"></div></div></div>
+  </div>
+  <div class="bottom">
+    <div class="codecard"><div class="codebar"><i></i><i></i><i></i><span>style.css</span><button class="copy">Copy</button></div><pre class="code" data-from="css-sqrt"></pre></div>
+    <div class="how"><h4>How it works</h4><ol class="steps" id="how-sqrt"></ol><p class="use"><b>Use it for:</b> bubble charts and shapes sized by area, so they look fair to the eye.</p></div>
+  </div>
+<style id="css-sqrt">
+.sqrt-demo { --area: 10000; }   /* the slider changes this */
+
+.sqrt-square {
+  width:  calc(sqrt(var(--area)) * 1px);
+  height: calc(sqrt(var(--area)) * 1px);
+}
+</style>
+</section>
+
+<!-- ============ 18 HYPOT ============ -->
+<section class="slide g-pow" data-title="hypot()" data-supports="width: hypot(3px, 4px)">
+  <header class="head">
+    <div><div class="eyebrow">Powers &amp; logs · 3 of 5</div><h2><code>hypot()</code>: length of a diagonal</h2><p class="lead">Calculates √(a² + b²) (Pythagoras). Unlike <code>pow()</code> and <code>sqrt()</code>, it works <b>with units</b>.</p></div>
+    <div class="syntax"><div class="label">Syntax</div><div class="box">hypot(a, b, …)</div><span class="support"></span></div>
+  </header>
+  <div class="stage">
+    <div class="stage-top"><span class="tag">Live example</span>
+      <label class="ctrl">--a <input type="range" id="hyp-a" min="60" max="420" value="240" data-target="#hypot-demo" data-prop="--a" data-unit="px"><output></output></label>
+      <label class="ctrl">--b <input type="range" id="hyp-b" min="40" max="180" value="140" data-target="#hypot-demo" data-prop="--b" data-unit="px"><output></output></label>
+    </div>
+    <div class="preview"><div class="hypot-demo" id="hypot-demo"><div class="hypot-box"><div class="hypot-line"></div></div></div></div>
+  </div>
+  <div class="bottom">
+    <div class="codecard"><div class="codebar"><i></i><i></i><i></i><span>style.css</span><button class="copy">Copy</button></div><pre class="code" data-from="css-hypot"></pre></div>
+    <div class="how"><h4>How it works</h4><ol class="steps" id="how-hypot"></ol><p class="use"><b>Use it for:</b> diagonal lines, and the distance between two points.</p></div>
+  </div>
+<style id="css-hypot">
+.hypot-demo { --a: 240px; --b: 140px; }   /* the sliders change these */
+
+.hypot-box  { width: var(--a); height: var(--b); }
+.hypot-line {
+  width: hypot(var(--a), var(--b));    /* diagonal length */
+  rotate: atan2(var(--b), var(--a));   /* diagonal angle  */
+}
+</style>
+</section>
+
+<!-- ============ 19 LOG ============ -->
+<section class="slide g-pow tall" data-title="log()" data-supports="width: calc(log(100, 10) * 1px)">
+  <header class="head">
+    <div><div class="eyebrow">Powers &amp; logs · 4 of 5</div><h2><code>log()</code>: tame huge ranges</h2><p class="lead">The reverse of a power: <code>log(1000, 10)</code> asks “10 to what power is 1000?” → 3 (10 × 10 × 10).</p></div>
+    <div class="syntax"><div class="label">Syntax</div><div class="box">log(value, base)</div><span class="support"></span></div>
+  </header>
+  <div class="stage">
+    <div class="stage-top"><span class="tag">Live example</span>
+      <label class="ctrl">Your value <input type="range" id="log-input" min="0" max="4" step="0.01" value="1.7"><output id="log-out"></output></label>
+    </div>
+    <div class="preview"><div class="log-wrap">
+      <div class="log-demo">
+        <div class="lrow"><span class="rlab">--v: 10</span><div class="ltrack"><div class="log-bar" style="--v: 10"></div></div><b></b></div>
+        <div class="lrow"><span class="rlab">--v: 100</span><div class="ltrack"><div class="log-bar" style="--v: 100"></div></div><b></b></div>
+        <div class="lrow"><span class="rlab">--v: 1000</span><div class="ltrack"><div class="log-bar" style="--v: 1000"></div></div><b></b></div>
+        <div class="lrow"><span class="rlab">--v: 10000</span><div class="ltrack"><div class="log-bar" style="--v: 10000"></div></div><b></b></div>
+        <div class="lrow mine"><span class="rlab" id="log-lab"></span><div class="ltrack"><div class="log-bar" id="log-custom"></div></div><b></b></div>
+      </div>
+      <table class="ctable"><thead><tr><th>Question<small>10 to what power = value?</small></th><th>Between which powers?</th><th>Answer</th><th>Check<small>split the power</small></th><th>Bar width</th></tr></thead><tbody><tr id="log-row"></tr></tbody></table>
+    </div></div>
+  </div>
+  <div class="bottom">
+    <div class="codecard"><div class="codebar"><i></i><i></i><i></i><span>style.css</span><button class="copy">Copy</button></div><pre class="code" data-from="css-log"></pre></div>
+    <div class="how"><h4>How it works</h4><ol class="steps" id="how-log"></ol><p class="use"><b>Use it for:</b> charts where values range from tiny to huge (views, file sizes, prices).</p></div>
+  </div>
+<style id="css-log">
+/* HTML: <div class="log-bar" style="--v: 1000"></div> */
+
+.log-bar {
+  width: calc(log(var(--v), 10) * 25%);   /* each ×10 adds 25% */
+}
+</style>
+</section>
+
+<!-- ============ 20 EXP ============ -->
+<section class="slide g-pow tall" data-title="exp()" data-supports="width: calc(exp(1) * 1px)">
+  <header class="head">
+    <div><div class="eyebrow">Powers &amp; logs · 5 of 5</div><h2><code>exp()</code>: multiply by e, again and again</h2><p class="lead"><b>e</b> is a fixed number, ≈ 2.718 (like π ≈ 3.14). <code>exp(x)</code> = e multiplied by itself x times, the same as <code>pow(2.718, x)</code>. So <code>exp(2)</code> = 2.718 × 2.718 ≈ 7.39.</p></div>
+    <div class="syntax"><div class="label">Syntax</div><div class="box">exp(x) = e<sup>x</sup></div><span class="support"></span></div>
+  </header>
+  <div class="stage">
+    <div class="stage-top"><span class="tag">Live example</span>
+      <label class="ctrl">Your x <input type="range" id="exp-input" min="0" max="4" step="0.1" value="2.5" data-target="#exp-mine" data-prop="--x" data-unit=""><output></output></label>
+      <span class="hint">Each +1 on x makes the bar 2.718× taller</span>
+    </div>
+    <div class="preview"><div class="calc-wrap">
+      <div class="exp-chart" id="exp-chart">
+        <div class="ecol"><b></b><div class="exp-bar" style="--x: 0"></div><span>exp(0)</span></div>
+        <div class="ecol"><b></b><div class="exp-bar" style="--x: 1"></div><span>exp(1)</span></div>
+        <div class="ecol"><b></b><div class="exp-bar" style="--x: 2"></div><span>exp(2)</span></div>
+        <div class="ecol"><b></b><div class="exp-bar" style="--x: 3"></div><span>exp(3)</span></div>
+        <div class="ecol"><b></b><div class="exp-bar" style="--x: 4"></div><span>exp(4)</span></div>
+        <div class="ecol mine"><b></b><div class="exp-bar" id="exp-mine"></div><span id="exp-lab"></span></div>
+      </div>
+      <table class="ctable"><thead><tr><th>Your x</th><th>Means<small>e × e × … (x times)</small></th><th>Result<small>exp(x)</small></th><th>Bar height<small>result × 2px</small></th></tr></thead><tbody><tr id="exp-row"></tr></tbody></table>
+    </div></div>
+  </div>
+  <div class="bottom">
+    <div class="codecard"><div class="codebar"><i></i><i></i><i></i><span>style.css</span><button class="copy">Copy</button></div><pre class="code" data-from="css-exp"></pre></div>
+    <div class="how"><h4>How it works</h4><ol class="steps" id="how-exp"></ol><p class="use"><b>Use it for:</b> natural-feeling growth, custom easing curves, data visuals.</p></div>
+  </div>
+<style id="css-exp">
+/* HTML: <div class="exp-bar" style="--x: 2"></div> */
+#exp-mine { --x: 2.5; }   /* the slider changes this */
+
+.exp-bar {
+  height: calc(exp(var(--x)) * 2px);   /* exp(2) ≈ 7.39 → 14.8px */
+}
+</style>
+</section>
+
+<!-- ============ 21 CHEAT SHEET ============ -->
+<section class="slide" data-title="Cheat sheet">
+  <header class="head"><div><div class="eyebrow" style="--g:var(--accent)">Quick reference</div><h2>Cheat sheet</h2></div></header>
+  <div class="cheat">
+    <table class="tbl">
+      <thead><tr><th>Function</th><th>Does</th><th>Example → result</th></tr></thead>
+      <tbody>
+        <tr class="g-core"><td><code>calc()</code></td><td>Arithmetic</td><td><code>calc(100% - 40px)</code></td></tr>
+        <tr class="g-core"><td><code>min()</code></td><td>Smallest value</td><td><code>min(90%, 1200px)</code></td></tr>
+        <tr class="g-core"><td><code>max()</code></td><td>Largest value</td><td><code>max(16px, 3vw)</code></td></tr>
+        <tr class="g-core"><td><code>clamp()</code></td><td>Min · fluid · max</td><td><code>clamp(1rem, 4vw, 3rem)</code></td></tr>
+        <tr class="g-round"><td><code>round()</code></td><td>Snap to a step</td><td><code>round(27px, 10px)</code> → 30px</td></tr>
+        <tr class="g-round"><td><code>mod()</code></td><td>Remainder (sign of B)</td><td><code>mod(270px, 100px)</code> → 70px</td></tr>
+        <tr class="g-round"><td><code>rem()</code></td><td>Remainder (sign of A)</td><td><code>rem(-150px, 100px)</code> → -50px</td></tr>
+        <tr class="g-sign"><td><code>abs()</code></td><td>Distance from 0</td><td><code>abs(-24px)</code> → 24px</td></tr>
+        <tr class="g-sign"><td><code>sign()</code></td><td>Direction</td><td><code>sign(-24px)</code> → -1</td></tr>
+      </tbody>
+    </table>
+    <table class="tbl">
+      <thead><tr><th>Function</th><th>Does</th><th>Example → result</th></tr></thead>
+      <tbody>
+        <tr class="g-trig"><td><code>sin()</code></td><td>Wave / y on a circle</td><td><code>sin(30deg)</code> → 0.5</td></tr>
+        <tr class="g-trig"><td><code>cos()</code></td><td>x on a circle</td><td><code>cos(60deg)</code> → 0.5</td></tr>
+        <tr class="g-trig"><td><code>tan()</code></td><td>Slope</td><td><code>tan(45deg)</code> → 1</td></tr>
+        <tr class="g-pow"><td><code>pow()</code></td><td>Power</td><td><code>pow(2, 3)</code> → 8</td></tr>
+        <tr class="g-pow"><td><code>sqrt()</code></td><td>Square root</td><td><code>sqrt(25)</code> → 5</td></tr>
+        <tr class="g-pow"><td><code>hypot()</code></td><td>Diagonal length</td><td><code>hypot(3px, 4px)</code> → 5px</td></tr>
+        <tr class="g-pow"><td><code>log()</code></td><td>Reverse of power</td><td><code>log(1000, 10)</code> → 3</td></tr>
+        <tr class="g-pow"><td><code>exp()</code></td><td>e to a power</td><td><code>exp(1)</code> → 2.718</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="rules">
+    <div class="rule"><b>Spaces around + and −</b><code>calc(100% - 4px)</code> works, <code>calc(100%-4px)</code> doesn’t.</div>
+    <div class="rule"><b>Units must make sense</b>You can’t add <code>2s</code> to <code>10px</code>.</div>
+    <div class="rule"><b>Numbers only</b><code>pow()</code> <code>sqrt()</code> <code>log()</code> <code>exp()</code>: multiply by a unit after.</div>
+    <div class="rule"><b>Trig returns a number</b>Use <code>calc(sin(30deg) * 100px)</code> to get a length.</div>
+  </div>
+</section>
+
+</div>
+</div>
+</div>
+
+<nav class="nav">
+  <button class="nb" id="prev" aria-label="Previous slide">← Prev</button>
+  <div class="dots" id="dots"></div>
+  <span class="counter" id="counter"></span>
+  <button class="nb" id="next" aria-label="Next slide">Next →</button>
+</nav>
+
+<script>
+const q = s => document.querySelector(s);
+const qa = s => [...document.querySelectorAll(s)];
+const W = el => parseFloat(getComputedStyle(el).width);
+const H = el => parseFloat(getComputedStyle(el).height);
+const f = (n, d = 1) => { const v = +(+n).toFixed(d); return Object.is(v, -0) ? 0 : v; };
+const set = (id, items) => { document.getElementById(id).innerHTML = items.map(x => `<li>${x}</li>`).join(''); };
+
+/* ---------- generated demo elements ---------- */
+for (let i = 0; i < 12; i++) q('#orbit').insertAdjacentHTML('beforeend', `<i style="--i: ${i}"></i>`);
+for (let i = 0; i < 16; i++) q('#wave').insertAdjacentHTML('beforeend', `<i class="wave-dot" style="--i: ${i}"></i>`);
+for (let i = 0; i < 16; i++) q('#wave-x').insertAdjacentHTML('beforeend', `<span></span>`);
+for (let i = 0; i < 8; i++) q('#ring').insertAdjacentHTML('beforeend', `<i class="ring-dot" style="--i: ${i}">${i}</i><span class="ring-deg" style="--i: ${i}">${i * 45}°</span>`);
+
+/* ---------- show each demo's real CSS, highlighted ---------- */
+const FN = 'calc|min|max|clamp|round|mod|rem|abs|sign|sin|cos|tan|atan2|pow|sqrt|hypot|log|exp|var|hsl|polygon';
+const TOKENS = new RegExp(String.raw`(\/\*[\s\S]*?\*\/)|(^[ \t]*[.#][^{\n]*?(?=\s*\{))|(?<![\w-])(-{0,2}[a-z][\w-]*)(?=\s*:)|\b(${FN})(?=\()|((?<![\w-])-?\d*\.?\d+(?:px|rem|em|deg|turn|cqw|vw|vh|%)?)`, 'gm');
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function highlight(src) {
+  let out = '', last = 0;
+  src.replace(TOKENS, (m, c, s, p, fn, n, i) => {
+    out += esc(src.slice(last, i));
+    const cls = c ? 't-c' : s ? 't-s' : p ? 't-p' : fn ? 't-f' : 't-n';
+    out += `<span class="${cls}">${esc(m)}</span>`;
+    last = i + m.length;
+  });
+  return out + esc(src.slice(last));
+}
+qa('pre.code[data-from]').forEach(pre => {
+  pre.dataset.raw = document.getElementById(pre.dataset.from).textContent.replace(/^\s*\n|\s+$/g, '');
+  pre.innerHTML = highlight(pre.dataset.raw);
+});
+qa('.copy').forEach(btn => btn.addEventListener('click', async () => {
+  const text = btn.closest('.codecard').querySelector('pre').dataset.raw;
+  try { await navigator.clipboard.writeText(text); btn.textContent = 'Copied!'; }
+  catch { btn.textContent = 'Select & copy'; }
+  setTimeout(() => btn.textContent = 'Copy', 1400);
+}));
+
+/* ---------- browser support badges ---------- */
+qa('.slide[data-supports]').forEach(s => {
+  const [prop, ...rest] = s.dataset.supports.split(':');
+  const ok = CSS.supports(prop.trim(), rest.join(':').trim());
+  const badge = s.querySelector('.support');
+  badge.textContent = ok ? '✓ Works in this browser' : '⚠ Not supported here: update your browser';
+  badge.classList.toggle('no', !ok);
+});
+
+/* ---------- live explanations ---------- */
+const updaters = [
+  () => { // calc
+    const fw = W(q('#calc-frame')), bw = W(q('.calc-box'));
+    q('#calc-read').textContent = `width = ${f(bw)}px`;
+    set('how-calc', [`<code>100%</code> = the container = <b>${f(fw)}px</b>`, `<code>${f(fw)}px − 40px</code>`, `= <b>${f(bw)}px</b>, always 40px less than its container`]);
+  },
+  () => { // min
+    const fw = W(q('#min-frame')), a = fw * .9, bw = W(q('.min-box'));
+    q('#min-read').textContent = `width = ${f(bw)}px`;
+    set('how-min', [`90% of ${f(fw)}px = <b>${f(a)}px</b>`, `<code>min(${f(a)}px, 360px)</code> → pick the smaller`, `= <b>${f(bw)}px</b>: ${a < 360 ? '90% is smaller, so the box shrinks' : 'capped at 360px'}`]);
+  },
+  () => { // max
+    const fw = W(q('#max-frame')), a = fw * .4, bw = W(q('.max-box'));
+    q('#max-read').textContent = `width = ${f(bw)}px`;
+    set('how-max', [`40% of ${f(fw)}px = <b>${f(a)}px</b>`, `<code>max(${f(a)}px, 200px)</code> → pick the larger`, `= <b>${f(bw)}px</b>: ${a > 200 ? '40% is larger, so the box grows' : 'never below 200px'}`]);
+  },
+  () => { // clamp
+    const fw = W(q('#clamp-frame')), pref = fw * .07, fs = parseFloat(getComputedStyle(q('.clamp-title')).fontSize);
+    q('#clamp-read').textContent = `font-size = ${f(fs)}px`;
+    const st = pref < 18 ? 'below 18px → use the <b>minimum</b>' : pref > 48 ? 'above 48px → use the <b>maximum</b>' : 'between the limits → use it as is';
+    set('how-clamp', [`<code>7cqw</code> = 7% of ${f(fw)}px = <b>${f(pref)}px</b>`, `Limits: at least <code>18px</code>, at most <code>48px</code>`, `${f(pref)}px is ${st} → <b>${f(fs)}px</b>`]);
+  },
+  () => { // round
+    const v = +q('#round-input').value, lo = Math.floor(v / 50) * 50, hi = Math.ceil(v / 50) * 50;
+    const w = {}; ['raw', 'nearest', 'up', 'down'].forEach(k => { w[k] = f(W(q('.round-' + k))); q('#rr-' + k).textContent = w[k] + 'px'; });
+    set('how-round', [`Value <b>${v}px</b> sits between the 50px steps <code>${lo}px</code> and <code>${hi}px</code>`, `<b>nearest</b> → ${w.nearest}px (the closer one) · <b>up</b> → ${w.up}px · <b>down</b> → ${w.down}px`, `<b>to-zero</b> also exists: same as down for positives, up for negatives`]);
+  },
+  () => { // mod
+    const w = +q('#mod-input').value, whole = Math.floor(w / 100), m = w % 100;
+    q('#mod-read-full').textContent = `${w}px`; q('#mod-read-left').textContent = `${f(W(q('.mod-left')))}px`;
+    q('#mod-row').innerHTML = `<td>${w}px</td><td>100px</td><td>${w} ÷ 100 = ${f(w / 100, 2)}</td><td>${whole}</td><td>100 × ${whole} = ${100 * whole}px</td><td class="res">${w} − ${100 * whole} = ${m}px</td>`;
+    set('how-mod', [`Each piece is <b>100px</b>. How many fit in <b>${w}px</b>?`, `<b>${whole}</b> whole piece${whole === 1 ? '' : 's'} fit = ${100 * whole}px`, `Left over: ${w} − ${100 * whole} = <b>${m}px</b>, so <code>mod(${w}px, 100px)</code> = <b>${m}px</b>`]);
+  },
+  () => { // rem
+    const x = +q('#rem-input').value, d = x / 100, m = ((x % 100) + 100) % 100, r = f(x % 100);
+    const fl = Math.floor(d), tr = f(Math.trunc(d), 0), neg = v => v < 0 ? `(${v})` : v;
+    q('#rem-read-val').textContent = `${x}px`; q('#rem-read-mod').textContent = `${m}px`; q('#rem-read-rem').textContent = `${r}px`;
+    q('#rem-row-mod').innerHTML = `<td class="fn">mod</td><td>${x}px</td><td>100px</td><td>${x} ÷ 100 = ${f(d, 2)}</td><td>round down → ${fl}</td><td>100 × ${neg(fl)} = ${100 * fl}px</td><td class="res">${x} − ${neg(100 * fl)} = ${m}px</td>`;
+    q('#rem-row-rem').innerHTML = `<td class="fn">rem</td><td>${x}px</td><td>100px</td><td>${x} ÷ 100 = ${f(d, 2)}</td><td>cut decimals → ${tr}</td><td>100 × ${neg(tr)} = ${f(100 * tr, 0)}px</td><td class="res">${x} − ${neg(f(100 * tr, 0))} = ${r}px</td>`;
+    set('how-rem', [`Both divide <b>${x}px</b> by <b>100px</b> and keep what’s left over`, `${x} ÷ 100 = ${f(d, 2)}: <code>mod</code> rounds <b>down</b> (${fl}), <code>rem</code> just <b>cuts the decimals</b> (${tr})`, m === r ? `Positive (or zero) value: both give <b>${m}px</b>` : `mod → <b>${m}px</b> (always positive) · rem → <b>${r}px</b> (keeps the minus)`]);
+  },
+  () => { // abs
+    const x = +q('#abs-input').value, d = W(q('.abs-distance'));
+    q('#abs-read').textContent = `${f(d)}px`;
+    set('how-abs', [`<code>--x: ${x}px</code>: the dot is ${x < 0 ? 'left of' : x > 0 ? 'right of' : 'at'} the center`, `<code>abs(${x}px)</code> = <b>${Math.abs(x)}px</b>`, `A width can’t be negative; <code>abs()</code> always gives a valid size`]);
+  },
+  () => { // sign
+    const x = +q('#sign-input').value, s = Math.sign(x);
+    set('how-sign', [`<code>--x: ${x}px</code>`, `<code>sign(${x}px)</code> = <b>${s}</b> (no unit)`, `<code>scale: ${s} 1</code> → ${s > 0 ? 'arrow points right' : s < 0 ? 'arrow is flipped to the left' : 'arrow is squashed to nothing'}`]);
+  },
+  () => { // sin
+    const p = +q('#sin-input').value, ang = 4 * 24 + p, s = Math.sin(ang * Math.PI / 180), y = s * 50;
+    qa('#wave-x span').forEach((el, i) => el.textContent = `${(i * 24 + p) % 360}°`);
+    set('how-sin', [`<b>x-axis:</b> dot <i>i</i> gets angle <code>i × 24° + ${p}°</code> (unit: <b>deg</b>)`, `Orange dot 4: <code>sin(${ang}deg)</code> = <b>${f(s, 3)}</b> (a plain number, no unit)`, `<b>y-axis:</b> ${f(s, 3)} × 50px = <b>${f(y)}px</b> → ${f(Math.abs(y))}px ${y < 0 ? 'up' : y > 0 ? 'down' : 'on the line'}. Change the phase and the wave travels`]);
+  },
+  () => { // cos
+    const r = +q('#cos-input').value, k = Math.SQRT1_2 * r;
+    set('how-cos', [`Dot <i>i</i> sits at angle <code>i × 45°</code>. 0° = right (+x), 90° = down (+y)`, `Dot 0 (0°): x = cos(0°) × ${r} = <b>${r}px</b>, y = <b>0</b>`, `Dot 1 (45°): x = 0.707 × ${r} = <b>${f(k)}px</b>, y = <b>${f(k)}px</b>`, `Dot 2 (90°): x = <b>0</b>, y = sin(90°) × ${r} = <b>${r}px</b>`]);
+  },
+  () => { // tan
+    const a = +q('#tan-input').value, t = Math.tan(a * Math.PI / 180), h = H(q('.ramp'));
+    q('#tan-read').textContent = `${f(h)}px`; q('#tan-theta').textContent = `${a}°`;
+    set('how-tan', [`<code>tan(${a}deg)</code> = <b>${f(t, 3)}</b>`, `${f(t, 3)} × 150px = <b>${f(h)}px</b> tall`, `Steeper angle → bigger tan → taller ramp (at 45°, height = width)`]);
+  },
+  () => { // pow
+    const r = +q('#pow-input').value;
+    const sizes = qa('.type-step').map(el => { const s = f(parseFloat(getComputedStyle(el).fontSize)); el.querySelector('small').textContent = s + 'px'; return s; });
+    set('how-pow', [`Each step multiplies by <b>${r}</b>`, `Step 2: <code>16px × pow(${r}, 2)</code> = 16 × ${f(r * r, 3)} = <b>${sizes[2]}px</b>`, `Scale: ${sizes.join(' → ')} px`]);
+  },
+  () => { // sqrt
+    const a = +q('#sqrt-input').value, side = W(q('.sqrt-square'));
+    q('#sqrt-read').textContent = `${f(side)}px`;
+    set('how-sqrt', [`Area = <b>${a} px²</b>`, `<code>sqrt(${a})</code> = <b>${f(Math.sqrt(a), 2)}</b> → × 1px`, `Side = <b>${f(side)}px</b> (and ${f(side)} × ${f(side)} ≈ ${a})`, `4× the area only makes it 2× wider`]);
+  },
+  () => { // hypot
+    const a = +q('#hyp-a').value, b = +q('#hyp-b').value, d = W(q('.hypot-line'));
+    set('how-hypot', [`a = <b>${a}px</b>, b = <b>${b}px</b>`, `√(${a}² + ${b}²) = √${a * a + b * b}`, `= <b>${f(d)}px</b> diagonal at <code>atan2()</code> = ${f(Math.atan2(b, a) * 180 / Math.PI)}°`]);
+  },
+  () => { // log
+    const v = Math.max(1, Math.round(Math.pow(10, +q('#log-input').value)));
+    q('#log-custom').style.setProperty('--v', v);
+    q('#log-out').textContent = v.toLocaleString('en');
+    q('#log-lab').textContent = `--v: ${v}`;
+    qa('.lrow').forEach(row => row.querySelector('b').textContent = f(W(row.querySelector('.log-bar')) / row.querySelector('.ltrack').clientWidth * 100) + '%');
+    const L = f(Math.log10(v), 2), n = Math.floor(L), fr = f(L - n, 2), p = 10 ** n, exact = fr === 0;
+    q('#log-row').innerHTML = `<td>10<sup>?</sup> = ${v}</td>`
+      + `<td>${exact ? `${v} = 10<sup>${n}</sup> exactly` : `10<sup>${n}</sup> = ${p} &lt; ${v} &lt; 10<sup>${n + 1}</sup> = ${p * 10}`}</td>`
+      + `<td class="res">log(${v}, 10) ≈ ${L}</td>`
+      + `<td>${exact ? `10<sup>${n}</sup> = ${p} ✓` : `10<sup>${L}</sup> = 10<sup>${n}</sup> × 10<sup>${fr}</sup> = ${p} × ${f(10 ** fr, 2)} ≈ ${v} ✓`}</td>`
+      + `<td>${L} × 25% = ${f(L * 25)}%</td>`;
+    set('how-log', [`<code>log(${v}, 10)</code> asks: <b>10 to what power gives ${v}?</b>`, exact ? `${v} is exactly 10<sup>${n}</sup> (${n} tens multiplied), so the answer is <b>${n}</b>` : `10<sup>${n}</sup> = ${p} and 10<sup>${n + 1}</sup> = ${p * 10}. ${v} is in between, so the answer is <b>${n}.something</b>`, exact ? `Every ×10 adds exactly 1 to the answer` : `10<sup>${fr}</sup> ≈ ${f(10 ** fr, 2)}, so ${v} ≈ ${p} × ${f(10 ** fr, 2)} = 10<sup>${n} + ${fr}</sup> = <b>10<sup>${L}</sup></b>`]);
+  },
+  () => { // exp
+    const x = +q('#exp-input').value, e = Math.exp(x), n = Math.floor(x), fr = f(x - n, 1), h = H(q('#exp-mine'));
+    qa('.ecol').forEach(col => col.querySelector('b').textContent = f(Math.exp(+col.querySelector('.exp-bar').style.getPropertyValue('--x')), 2));
+    q('#exp-lab').textContent = `exp(${x})`;
+    const times = n === 0 ? '' : Array(n).fill('2.718').join(' × ');
+    const means = fr === 0 ? (n === 0 ? 'no e at all = 1' : times) : `${times ? times + ' × ' : ''}e<sup>${fr}</sup>`;
+    q('#exp-row').innerHTML = `<td>x = ${x}</td><td>${means}</td><td class="res">exp(${x}) ≈ ${f(e, 2)}</td><td>${f(e, 2)} × 2px = ${f(h)}px</td>`;
+    set('how-exp', [`<code>exp(x)</code> = e<sup>x</sup>: start at 1 and multiply by <b>2.718</b>, x times`, `Your x = ${x}: <code>exp(${x})</code> ≈ <b>${f(e, 2)}</b> → × 2px = <b>${f(h)}px</b> tall`, `+1 on x → × 2.718: 1 → 2.72 → 7.39 → 20.09 → 54.6. Small at first, then it shoots up`, `It’s the opposite of <code>log()</code>: <code>log(exp(${x}))</code> = ${x} (log with no base uses e)`]);
+  },
+];
+function refresh() {
+  qa('.frame').forEach(fr => fr.dataset.w = `container: ${Math.round(fr.clientWidth)}px`);
+  updaters.forEach(u => u());
+}
+
+/* ---------- sliders write CSS variables / sizes ---------- */
+qa('input[data-prop]').forEach(inp => {
+  inp.apply = () => {
+    const val = inp.value + (inp.dataset.unit || '');
+    q(inp.dataset.target).style.setProperty(inp.dataset.prop, val);
+    if (inp.nextElementSibling?.tagName === 'OUTPUT') inp.nextElementSibling.textContent = val;
+  };
+  inp.addEventListener('input', () => { inp.apply(); refresh(); });
+  inp.apply();
+});
+q('#log-input').addEventListener('input', refresh);
+qa('.frame').forEach(fr => new ResizeObserver(refresh).observe(fr));
+
+/* sin(): play button animates the phase */
+let playing = null;
+q('#sin-play').addEventListener('click', e => {
+  const inp = q('#sin-input');
+  if (playing) { cancelAnimationFrame(playing); playing = null; e.target.textContent = '▶ Play'; return; }
+  e.target.textContent = '❚❚ Pause';
+  const tick = () => { inp.value = (+inp.value + 3) % 360; inp.apply(); refresh(); playing = requestAnimationFrame(tick); };
+  tick();
+});
+
+/* ---------- horizontal deck ---------- */
+const slides = qa('.slide'), track = q('#track'), dots = q('#dots');
+let cur = 0;
+slides.forEach((s, i) => {
+  s.insertAdjacentHTML('beforeend', `<span class="slide-no">${String(i + 1).padStart(2, '0')} / ${slides.length}</span>`);
+  const b = document.createElement('button');
+  b.title = `${i + 1}. ${s.dataset.title}`; b.setAttribute('aria-label', b.title);
+  b.addEventListener('click', () => go(i));
+  dots.appendChild(b);
+});
+function go(n) {
+  cur = Math.max(0, Math.min(slides.length - 1, n));
+  track.style.transform = `translateX(${-cur * 100}%)`;
+  slides.forEach((s, i) => s.inert = i !== cur);
+  [...dots.children].forEach((d, i) => d.classList.toggle('on', i === cur));
+  q('#counter').textContent = `${cur + 1} / ${slides.length} · ${slides[cur].dataset.title}`;
+  q('#progress').style.width = ((cur + 1) / slides.length * 100) + '%';
+  history.replaceState(null, '', '#' + (cur + 1));
+}
+q('#prev').addEventListener('click', () => go(cur - 1));
+q('#next').addEventListener('click', () => go(cur + 1));
+qa('[data-go]').forEach(el => el.addEventListener('click', () => go(+el.dataset.go - 1)));
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input, select, textarea')) return;
+  const k = e.key;
+  if (k === 'ArrowRight' || k === 'PageDown' || (k === ' ' && !e.target.matches('button'))) { e.preventDefault(); go(cur + 1); }
+  else if (k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); go(cur - 1); }
+  else if (k === 'Home') go(0);
+  else if (k === 'End') go(slides.length - 1);
+  else if (k === 'f' || k === 'F') document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen?.();
+});
+let sx = null, sy = 0;
+document.addEventListener('touchstart', e => { if (e.target.matches('input')) return; sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+document.addEventListener('touchend', e => {
+  if (sx === null) return;
+  const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; sx = null;
+  if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) go(cur + (dx < 0 ? 1 : -1));
+});
+
+/* scale the 1280×720 canvas to fit; fall back to fluid slides on phones */
+function fit() {
+  const w = innerWidth, h = innerHeight - 60;
+  const s = Math.min((w - 32) / 1280, (h - 16) / 720);
+  document.body.classList.toggle('fluid', w < 760 || s < 0.5);
+  q('#canvas').style.setProperty('--s', s);
+}
+addEventListener('resize', fit);
+fit();
+refresh();
+track.style.transition = 'none';   // open on the #slide without animating
+go((parseInt(location.hash.slice(1)) || 1) - 1);
+requestAnimationFrame(() => requestAnimationFrame(() => track.style.transition = ''));
+</script>
+</body>
+</html>
